@@ -1,6 +1,4 @@
-
-## Codigin  
-
+#definindo Funções:
 def incluir(lista, valor):
     lista.append(valor)
 
@@ -23,9 +21,12 @@ def organizar(lista,item1,item2):
         lista[item1],lista[item2]=lista[item2],lista[item1]
     else:
         print("opção Invalida,tente novamente: ")
-    
+
+# Criando a lista de estudo:
+
 lista1=[]
 
+# Aplicando a estrutura de repetição com o as opções em IFs
 while True:
     print("")
     print("")
