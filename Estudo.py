@@ -1,4 +1,7 @@
 #definindo Funções:
+
+
+
 def incluir(lista, valor):
     lista.append(valor)
 
