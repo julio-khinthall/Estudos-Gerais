@@ -198,3 +198,5 @@ class Cadastros(funcs):
         self.lista.bind("<Double-1>",self.Clique_duplo)
         
 Cadastros()
+
+print("Funcionou")
