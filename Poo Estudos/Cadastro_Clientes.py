@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 import sqlite3
+import os
 
 root=Tk()
 
@@ -14,7 +15,8 @@ class funcs():
         self.Cidade_entry.delete(0,END)
    
     def conecta_bd(self):
-        self.conn=sqlite3.connect("Base_de_Clientes")
+        caminho_bd = os.path.join(os.path.dirname(__file__), 'Base_de_Clientes')
+        self.conn = sqlite3.connect(caminho_bd)
         self.cursor=self.conn.cursor(); print("Conectando ao banco de dados")
         
     def desconecta_bd(self):
@@ -59,7 +61,7 @@ class funcs():
         lista = self.cursor.execute("""
             SELECT cod, Nome_cliente, telefone, cidade 
             FROM clientes 
-            ORDER BY Nome_cliente ASC;
+            ORDER BY cod ASC;
         """)
         for i in lista:
             self.lista.insert("", END, values=i)
@@ -100,6 +102,23 @@ class funcs():
         self.select_lista()
         self.Limpar_tela()
 
+    def busca_cliente(self):
+        self.conecta_bd()
+        self.lista.delete(*self.lista.get_children()) 
+        self.nome_entry.insert(END,'%')
+        nome=self.nome_entry.get()
+        self.cursor.execute("""
+                            SELECT cod, nome_cliente, telefone, cidade
+                            FROM clientes
+                            WHERE nome_cliente LIKE '%s'
+                            ORDER BY nome_cliente ASC
+                            """ % nome)
+        buscanome=self.cursor.fetchall()
+        for i in buscanome:
+            self.lista.insert("",END,values=i)
+        self.Limpar_tela()
+        self.desconecta_bd()
+        
 class Cadastros(funcs):
     
     def __init__(self):
@@ -112,6 +131,7 @@ class Cadastros(funcs):
         self.botoes()
         self.Lista()
         self.select_lista()
+        self.Menus()
         root.mainloop()           
         
     def tela(self):
@@ -133,7 +153,7 @@ class Cadastros(funcs):
         self.bt_Limpar= Button(self.subtela_1,text="limpar",command=self.Limpar_tela)
         self.bt_Limpar.place(relx=0.15,rely=0.1,relheight=0.1,relwidth=0.15)
         
-        self.bt_buscar= Button(self.subtela_1,text="Buscar")
+        self.bt_buscar= Button(self.subtela_1,text="Buscar",command=self.busca_cliente)
         self.bt_buscar.place(relx=0.30,rely=0.1,relheight=0.1,relwidth=0.15)
         
         self.bt_Novo= Button(self.subtela_1,text="Novo",command=self.add_cliente)
@@ -197,6 +217,25 @@ class Cadastros(funcs):
     
         self.lista.bind("<Double-1>",self.Clique_duplo)
         
+    def Menus(self):
+        barra_menu=Menu(self.root)
+        self.root.config(menu=barra_menu)  
+        
+        filemenu=Menu(barra_menu)
+        filemenu2=Menu(barra_menu)
+        filemenu3=Menu(barra_menu)
+        def Quit():
+            self.root.destroy()
+        
+        barra_menu.add_cascade(label="Opções",menu=filemenu)
+        filemenu.add_command(label="Teste",command=Quit) 
+        filemenu.add_command(label="Sair",command=Quit)
+        
+        barra_menu.add_cascade(label="Sobre",menu=filemenu2)
+        filemenu2.add_command(label="Limpa Cliente",command=self.Limpar_tela)
+        
+        barra_menu.add_cascade(label="Outras Opções",menu=filemenu3)
+        filemenu3.add_command(label="Em Desenvolvimento",command=self.Limpar_tela)
+        
+          
 Cadastros()
-
-print("Funcionou")
