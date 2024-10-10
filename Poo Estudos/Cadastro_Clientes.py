@@ -1,11 +1,49 @@
+# -*- coding: utf-8 -*-
+
 from tkinter import *
 from tkinter import ttk
+from tkinter import tix
 import sqlite3
-import os
+import os 
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import SimpleDocTemplate, Image
+from reportlab.pdfgen import canvas
+import webbrowser
 
-root=Tk()
+root=tix.Tk()
 
+class Relatorios():
+    
+    def printcliente(self):
+        webbrowser.open("cliente.pdf")
+   
+    def geraRelatcliente(self):
+        self.c = canvas.Canvas("cliente.pdf")
 
+        
+        self.codigoRel = self.codigo_entry.get()
+        self.nomeRel = self.nome_entry.get()
+        self.telefoneRel = self.telefone_entry.get()
+        self.cidadeRel = self.Cidade_entry.get()
+
+       
+        self.c.setFont("Helvetica-Bold", 24)
+        self.c.drawString(200, 790, 'Ficha do cliente')
+
+        
+        self.c.drawString(100, 750, f'Código: {self.codigoRel}')
+        self.c.drawString(100, 730, f'Nome: {self.nomeRel}')
+        self.c.drawString(100, 710, f'Telefone: {self.telefoneRel}')
+        self.c.drawString(100, 690, f'Cidade: {self.cidadeRel}')
+
+        self.c.showPage()
+        self.c.save()
+        
+        self.printcliente()   
+    
+        
 class funcs():
     
     def Limpar_tela(self):
@@ -15,32 +53,35 @@ class funcs():
         self.Cidade_entry.delete(0,END)
    
     def conecta_bd(self):
-        caminho_bd = os.path.join(os.path.dirname(__file__), 'Base_de_Clientes')
+        caminho_bd = os.path.join(os.path.dirname(__name__), 'Base_de_Clientes.db')
         self.conn = sqlite3.connect(caminho_bd)
-        self.cursor=self.conn.cursor(); print("Conectando ao banco de dados")
+        self.cursor = self.conn.cursor()
+        print("Conectado ao banco de dados")
         
     def desconecta_bd(self):
          self.conn.close()         
          
     def montaTabela(self):
         self.conecta_bd()
-        ##Criando Tabela##
         self.cursor.execute("""
-                CREATE TABLE IF NOT EXISTS clientes(
-                    cod INTEGER PRIMARY KEY,
-                    Nome_cliente CHAR(40) NOT NULL,
-                    telefone INTEGER (20),
-                    cidade CHAR (40)
-                );                
-                """)
-        self.conn.commit();print("Banco Criado")
+            CREATE TABLE IF NOT EXISTS clientes(
+                cod INTEGER PRIMARY KEY,
+                Nome_cliente CHAR(40) NOT NULL,
+                telefone INTEGER (20),
+                cidade CHAR (40)
+            );
+        """)
+        self.conn.commit()
+        print("Banco Criado")
         self.desconecta_bd();print("Desconectando ao banco de dados")
     
     def variaveis(self):
         self.conecta_bd() 
         self.codigo = self.codigo_entry.get()
         self.nome = self.nome_entry.get()
-        self.telefone = self.telefone_entry.get()
+        telefone_formatado = self.telefone_entry.get()
+        telefone_formatado = f"({telefone_formatado[:2]}) {telefone_formatado[2:7]}-{telefone_formatado[7:]}".strip()
+        self.telefone = telefone_formatado
         self.cidade = self.Cidade_entry.get()
    
     def add_cliente(self):
@@ -106,20 +147,21 @@ class funcs():
         self.conecta_bd()
         self.lista.delete(*self.lista.get_children()) 
         self.nome_entry.insert(END,'%')
-        nome=self.nome_entry.get()
+        nome = f"%{self.nome_entry.get()}%"
         self.cursor.execute("""
-                            SELECT cod, nome_cliente, telefone, cidade
-                            FROM clientes
-                            WHERE nome_cliente LIKE '%s'
-                            ORDER BY nome_cliente ASC
-                            """ % nome)
+            SELECT cod, Nome_cliente, telefone, cidade
+            FROM clientes
+            WHERE Nome_cliente LIKE ?
+            ORDER BY Nome_cliente ASC
+        """, (nome,))
         buscanome=self.cursor.fetchall()
         for i in buscanome:
             self.lista.insert("",END,values=i)
         self.Limpar_tela()
         self.desconecta_bd()
         
-class Cadastros(funcs):
+        
+class Cadastros(funcs,Relatorios):
     
     def __init__(self):
         self.root=root
@@ -172,7 +214,7 @@ class Cadastros(funcs):
         self.lb_codigo= Label(self.subtela_1,text="Nome",bg ="#dfe3ee")
         self.lb_codigo.place(relx=0.005,rely=0.4,relheight=0.1,relwidth=0.13)
         
-        self.lb_codigo= Label(self.subtela_1,text="Telefone",bg ="#dfe3ee")
+        self.lb_codigo= Label(self.subtela_1,text="Telefone (Apenas Numeros)",bg ="#dfe3ee")
         self.lb_codigo.place(relx=0.005,rely=0.7,relheight=0.1,relwidth=0.13)       
         
         self.lb_codigo= Label(self.subtela_1,text="Cidade",bg ="#dfe3ee")
@@ -185,12 +227,14 @@ class Cadastros(funcs):
         self.nome_entry= Entry(self.subtela_1,)
         self.nome_entry.place(relx=0.005,rely=0.5,relheight=0.1,relwidth=0.5)
         
-        self.telefone_entry= Entry(self.subtela_1,)
-        self.telefone_entry.place(relx=0.005,rely=0.8,relheight=0.1,relwidth=0.4)
-             
-        self.Cidade_entry= Entry(self.subtela_1,)
-        self.Cidade_entry.place(relx=0.5,rely=0.8,relheight=0.1,relwidth=0.4)
-                     
+        self.telefone_entry = Entry(self.subtela_1)
+
+        
+        self.telefone_entry.place(relx=0.005, rely=0.8, relheight=0.1, relwidth=0.4)
+        
+        self.Cidade_entry = Entry(self.subtela_1)
+        self.Cidade_entry.place(relx=0.5, rely=0.8, relheight=0.1, relwidth=0.4)
+                                
     def Lista(self):
         self.lista=ttk.Treeview(self.subtela_2,height=7,columns=("col 1","col 2","col 3","col 4"))
         
@@ -228,14 +272,14 @@ class Cadastros(funcs):
             self.root.destroy()
         
         barra_menu.add_cascade(label="Opções",menu=filemenu)
-        filemenu.add_command(label="Teste",command=Quit) 
+        filemenu.add_command(label="Relatorios",command=self.geraRelatcliente) 
         filemenu.add_command(label="Sair",command=Quit)
         
         barra_menu.add_cascade(label="Sobre",menu=filemenu2)
         filemenu2.add_command(label="Limpa Cliente",command=self.Limpar_tela)
         
         barra_menu.add_cascade(label="Outras Opções",menu=filemenu3)
-        filemenu3.add_command(label="Em Desenvolvimento",command=self.Limpar_tela)
+        filemenu3.add_command(label="Ficha do cliente",command=self.geraRelatcliente)
         
           
 Cadastros()
